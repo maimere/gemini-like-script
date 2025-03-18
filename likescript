@@ -1,0 +1,48 @@
+#!/bin/bash
+# This script is meant to be summoned inside the page.
+# It shows the number of likes and the (un)like button.
+
+# Directory where the likes are storaged.
+# I don't use a public directory (i.e., inside /var/gemini).
+likedir="/var/example"
+
+# If the page is not in the likeable file, the script won't even show up
+islikeable="$(grep -cx ${SCRIPT_NAME} ${likedir}/likeable)"
+
+if [ $islikeable -eq 0 ]
+then
+  exit 0
+fi
+
+# A separator from the page content
+echo -ne "\n\n===============\n\n"
+
+# Counts the number of likes (number of lines in the file
+numlikes="$(wc -l ${likedir}/${SCRIPT_NAME} | awk '{print $1}')"
+
+# Checks if the ip of the user is in the file
+userliked="$(grep -cx ${REMOTE_HOST} ${likedir}${SCRIPT_NAME})"
+
+# Text for the number of likes
+if [ $numlikes -eq 1 ]
+then
+  echo "1 guest liked this."
+elif [ $numlikes -eq 0 ]
+then
+  echo "No one liked this yet."
+else
+  echo "${numlikes} guests liked this."
+fi
+
+# Text for the (un)like button
+if [ $userliked -eq 0 ]
+then
+  linktxt="Like this page."
+else
+  linktxt="Unlike this page."
+fi
+
+echo "=> gemini://yourdomain.com/like${SCRIPT_NAME} $linktxt"
+
+exit
+

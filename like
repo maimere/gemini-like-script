@@ -1,0 +1,35 @@
+#!/bin/bash
+# This script registers the (un)likes.
+# The IP of the users are written in a file corresponding to the page he/she liked.
+
+# Directory where the likes are storaged.
+# I don't use a public directory (i.e., inside /var/gemini).
+likedir="/var/example"
+
+# If the page is not in the 'likeable' file, the script shows a 51 error,
+# preventing anyone (mainly robots) to like pages that don't exist.
+islikeable="$(grep -cx ${PATH_INFO} ${likedir}/likeable)"
+
+if [ $islikeable -eq 0 ] || [ -z ${PATH_INFO} ]
+then
+  echo -ne "51 Path not found\r\n"
+  exit 0
+fi
+
+# Checks if the user IP is in the file corresponding to the page
+user_liked="$(grep -cx ${REMOTE_HOST} ${likedir}${PATH_INFO})"
+
+# If it is, unlikes the page, i.e., removes the IP from the file.
+# If it isn't, adds the IP to the file.
+if [ $user_liked -gt 0 ]
+then
+  grep -vx ${REMOTE_HOST} ${likedir}${PATH_INFO} > ${likedir}${PATH_INFO}.tmp
+  cp -f ${likedir}${PATH_INFO}.tmp ${likedir}${PATH_INFO}
+else
+  echo ${REMOTE_HOST} >> ${likedir}${PATH_INFO}
+fi
+
+# Redirects to the page which summoned the 'like' script
+echo -ne "30 gemini://yourdomain.com${PATH_INFO}\r\n"
+
+exit 0
